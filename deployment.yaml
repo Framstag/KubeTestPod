@@ -1,0 +1,60 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: kubetestpod
+  labels:
+    app: kubetestpod
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubetestpod  
+  template:
+    metadata:
+      name: kubetestpod
+      labels:
+        app: kubetestpod
+    spec:
+      containers:
+        - name: kubetestpod
+          image: 'framstag/kubetestpod:test'
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          readinessProbe:
+            periodSeconds: 2
+            httpGet:
+              path: /readiness
+              port: 8080
+          livenessProbe:
+            httpGet:
+              path: /liveness
+              port: 8080
+            initialDelaySeconds: 1
+            periodSeconds: 2
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubetestpod
+spec:
+  selector:
+    app: kubetestpod
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: kubetestpod
+spec:
+  rules:
+  - host: kubetestpod.example.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: kubetestpod
+          servicePort: 8080
